@@ -23,7 +23,7 @@ def populate_dict(filename):
 	U2B = dict()
 	# B2U = dict()
 	temp = list()
-	with open(datapath + filename, 'r') as reviews:
+	with open(data_path + filename, 'r') as reviews:
 		for review in reviews:
 			curr_review = byteify(json.loads(review))
 			user = curr_review['user_id']
@@ -63,6 +63,8 @@ for review in reviews_json:
 			BusinessToUser[business] = set()
 		BusinessToUser[business].add(user)
 
+del reviews_json
+
 #This dictionary should have all businesses that match the criteria
 qualified_business = {k:v for (k,v) in BusinessToUser.items() if len(v) >= busi_reviews}
 business_set = set(qualified_business.keys())
@@ -72,6 +74,8 @@ reviews_final = list()
 for reivew in reviews_filtered:
 	if review['business_id'] in business_set:
 		reviews_final.append(review)
+
+del reviews_filtered
 
 with open(data_path + 'yelp_filtered_reviews', 'w') as f:
 	f.write('\n'.join(reviews_final))
