@@ -1,6 +1,8 @@
 import json
+data_path = "data/"
 filename = 'yelp_academic_dataset_review.json'
 
+#Minimum reviews
 user_reviews = 35
 busi_reviews = 100
 
@@ -14,42 +16,62 @@ def byteify(input):
     else:
         return input
 
+# review_json = list()
+
 # Loads a .json file with multiple json objects on different lines
 def populate_dict(filename):
 	U2B = dict()
-	B2U = dict()
-	with open(filename, 'r') as reviews:
+	# B2U = dict()
+	temp = list()
+	with open(datapath + filename, 'r') as reviews:
 		for review in reviews:
 			curr_review = byteify(json.loads(review))
 			user = curr_review['user_id']
 			business = curr_review['business_id']
 			if user not in U2B:
 				U2B[user] = set()
-			if business not in B2U:
-				B2U[business] = set()
+			# if business not in B2U:
+			# 	B2U[business] = set()
 			U2B[user].add(business)
-			B2U[business].add(user)
-	return U2B, B2U
+			# B2U[business].add(user)
+			temp.append(curr_review)
+	return temp, U2B #, B2U
 
-UserToBusiness, BusinessToUser = populate_dict(filename)
+# UserToBusiness, BusinessToUser = populate_dict(filename)
+reviews_json, UserToBusiness = populate_dict(filename)
 
-User35 = {k:v for (k,v) in UserToBusiness.items() if len(v) >= user_reviews}
+# Contains the list of users that have greater than 35 reviews
+qualified_users = {k:v for (k,v) in UserToBusiness.items() if len(v) >= user_reviews}
+userset = set(qualified_users.keys())
 
+# Filters out any reviews that are not by the users in qualified_users
+# Using remove is going to take a long time?
+BusinessToUser = dict()
+reviews_filtered = list()
 
+# may need some attention, current implementation uses lots of memory
+# Possible to drop old list from memory?
+for review in reviews_json:
+	# if review['user_id'] not in userset:
+	# 	reviews_json.remove(review) #TODO: change implementation, very slow
+	# else: 
+	if review['user_id'] in userset:
+		reviews_filtered.append(review)
+		business = review['business_id']
+		user = reivew['user_id']
+		if business not in BusinessToUser: 
+			BusinessToUser[business] = set()
+		BusinessToUser[business].add(user)
 
-# with open(filter_list, 'r') as f:
-# 	filter_set = f.read()
+#This dictionary should have all businesses that match the criteria
+qualified_business = {k:v for (k,v) in BusinessToUser.items() if len(v) >= busi_reviews}
+business_set = set(qualified_business.keys())
 
-# filter_set = filter_set.split("\n")
+#Last loop through the reviews to filter out anymore reviews that aren't fitting the criteria
+reviews_final = list()
+for reivew in reviews_filtered:
+	if review['business_id'] in business_set:
+		reviews_final.append(review)
 
-# output = []
-
-# with open(filename, 'r') as reviews:
-# 	for review in reviews:
-# 		curr_review = byteify(json.loads(review))
-# 		business = curr_review['business_id']
-# 		if business in filter_set:
-# 			output.append(review)
-
-# with open("business100.json", 'w') as f:
-# 	f.write('\n'.1join(output))
+with open(data_path + 'yelp_filtered_reviews', 'w') as f:
+	f.write('\n'.join(reviews_final))
