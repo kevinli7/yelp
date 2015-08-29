@@ -38,9 +38,11 @@ def populate_dict(filename):
 	return temp, U2B #, B2U
 
 # UserToBusiness, BusinessToUser = populate_dict(filename)
+print("Reading in file and populating dict...")
 reviews_json, UserToBusiness = populate_dict(filename)
 
 # Contains the list of users that have greater than 35 reviews
+print("Finding users with over 35 reviews...")
 qualified_users = {k:v for (k,v) in UserToBusiness.items() if len(v) >= user_reviews}
 userset = set(qualified_users.keys())
 
@@ -51,6 +53,7 @@ reviews_filtered = list()
 
 # may need some attention, current implementation uses lots of memory
 # Possible to drop old list from memory?
+print("Removing reviews from users without 35 reviews and populating new dict...")
 for review in reviews_json:
 	# if review['user_id'] not in userset:
 	# 	reviews_json.remove(review) #TODO: change implementation, very slow
@@ -58,7 +61,7 @@ for review in reviews_json:
 	if review['user_id'] in userset:
 		reviews_filtered.append(review)
 		business = review['business_id']
-		user = reivew['user_id']
+		user = review['user_id']
 		if business not in BusinessToUser: 
 			BusinessToUser[business] = set()
 		BusinessToUser[business].add(user)
@@ -66,16 +69,20 @@ for review in reviews_json:
 del reviews_json
 
 #This dictionary should have all businesses that match the criteria
+print("Selecting businesses with over 100 reviews...")
 qualified_business = {k:v for (k,v) in BusinessToUser.items() if len(v) >= busi_reviews}
 business_set = set(qualified_business.keys())
 
 #Last loop through the reviews to filter out anymore reviews that aren't fitting the criteria
 reviews_final = list()
-for reivew in reviews_filtered:
+for review in reviews_filtered:
 	if review['business_id'] in business_set:
-		reviews_final.append(review)
+		reviews_final.append(json.dumps(review))
 
 del reviews_filtered
 
-with open(data_path + 'yelp_filtered_reviews', 'w') as f:
+print("Writing new data file...")
+with open(data_path + 'yelp_filtered_reviews.json', 'w') as f:
 	f.write('\n'.join(reviews_final))
+
+print("Done")
