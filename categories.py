@@ -1,5 +1,5 @@
 import json, re, string
-from datetime import datetime
+from nltk.corpus import stopwords
 
 filename = 'yelp_academic_dataset_business.json'
 
