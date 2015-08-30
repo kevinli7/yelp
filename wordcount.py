@@ -57,6 +57,7 @@ if __name__ == "__main__":
 	print("Counting words...")
 	word_count = count_file(data_path + filename, field)
 	sorted_words = sorted(word_count.items(), key=lambda x:-1*x[1])
+	sorted_words = [(x[0], x[1]) for x in sorted_words if x[1] >= 200]
 	print("Writing file...")
 	write_file(data_path + output_name, '\n'.join("%s %s" % word for word in sorted_words))
 	print("Done!")
