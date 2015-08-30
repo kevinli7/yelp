@@ -1,5 +1,7 @@
 import json
-
+import os
+import datetime
+	
 def byteify(input):
     if isinstance(input, dict):
         return {byteify(key):byteify(value) for key,value in input.iteritems()}
@@ -10,42 +12,73 @@ def byteify(input):
     else:
         return input
 
-""" Loads a .json file with multiple json objects on different lines
-    filename: filename of the .json file
-    outputs (temp, U2B, B2U)
-    temp is list of json objects
-    U2B is a dictionary (string, set) of users ids to businesses they review
-    B2U is a dictionary (string, set) of business ids to users who have reviewed them """
-def populate_dict(filename):
-	U2B = dict()
-	B2U = dict()
-	temp = list()
-	with open(filename, 'r') as reviews:
-		for review in reviews:
-			curr_review = byteify(json.loads(review))
-			user = curr_review['user_id']
-			business = curr_review['business_id']
-			if user not in U2B:
-				U2B[user] = set()
-			if business not in B2U:
-				B2U[business] = set()
-			U2B[user].add(business)
-			B2U[business].add(user)
-			temp.append(curr_review)
-	return temp, U2B, B2U
+def get_json(json_string):
+  return byteify(json.loads(json_string))
 
+def get_date(review_json):
+	date_str = review_json['date']
+	y,m,d = map(lambda x: int(x), date_str.replace('-', ' ').split())
+	date = datetime.date(y,m,d)
+	return date
 
+def get_user(review_json):
+	return review_json['user_id']
 
+def get_business(review_json):
+	return review_json['business_id']
 
-if __name__ == "__main__":
+def filter_reviews(review_file, min_user_reviews, min_busi_reviews, data_path="data"):
+	reviews = open(review_file, 'r')
+	u2b = dict()
+	b2u = dict()
+	ub2d = dict()
+	eliminate = set()
+	print("Reading in file and populating dict...")  	
+	for r in reviews:
+		review_json = get_json(r)
+		user = get_user(review_json)
+		business = get_business(review_json)
+		date = get_date(review_json)
+		if (user,business) in ub2d:
+			if ub2d[(user,business)]>date:
+				eliminate.add((user,business,date))
+			else:
+				eliminate.add((user,business,ub2d[(user,business)]))
+				ub2d[(user,business)]=date
+		else:
+			ub2d[(user,business)]=date
+			if user not in u2b:
+				u2b[user]=set()
+			u2b[user].add(business)
+			if business not in b2u:
+				b2u[business]=set()
+			b2u[business].add(user)
+	reviews.close()
+	print("Finding users with over {0} reviews...".format(min_user_reviews))
+	qualified_users = set([u for (u,b) in u2b.items() if len(b)>=min_user_reviews])
+	print("Removing reviews from users without 35 reviews and populating new dict...")
+	b2u = {b:(u.intersection(qualified_users)) for (b,u) in b2u.items()}
+	print("Selecting businesses with over {0} reviews...".format(min_busi_reviews)) 
+	qualified_business = set([b for (b,u) in b2u.items() if len(u)>=min_busi_reviews])
+	reviews = open(review_file, 'r')
+	new_reviews = open(os.path.join(data_path, 'yelp_filtered_reviews.json'), 'w')
+	print("Writing new data file...") 
+	for r in reviews:
+		review_json = get_json(r)
+		user = get_user(review_json)
+		business = get_business(review_json)
+		date = get_date(review_json)
+		if (user,business,date) not in eliminate and user in qualified_users and business in qualified_business:
+			new_reviews.write(r)
+	new_reviews.close()
+	reviews.close()
+	print("Done") 
+	
+if __name__ == "__main__":	
 	#Minimum reviews
 	user_reviews = 35
 	busi_reviews = 100
-	
 	#file information
 	data_path = "data/"
-	filename = 'yelp_academic_dataset_review.json'
-
-	print("Reading in file and populating dict...")
-	reviews_json, UserToBusiness, BusinessToUser = populate_dict(filename)
-	del BusinessToUser
+	file_path = 'data/yelp_academic_dataset_review.json'
+	filter_reviews(file_path, user_reviews, busi_reviews, data_path="data")
