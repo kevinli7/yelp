@@ -111,11 +111,11 @@ class Yelp:
 		self.businessCount=0
 		reviews = open(reviewFilePath, 'r')
 		for r in reviews:
-			reviewJson = getJson(r)
-			userID = getUser(reviewJson)
-			businessID = getBusiness(reviewJson)		
-			text = getText(reviewJson)
-			rate = getRate(reviewJson)
+			reviewJson = f.getJson(r)
+			userID = f.getUser(reviewJson)
+			businessID = f.getBusiness(reviewJson)		
+			text = f.getText(reviewJson)
+			rate = f.getRate(reviewJson)
 			if businessId not in Business.busiID2Busi.keys():
 				busiObj = Business(businessID, numNeighbors)
 				self.businessCount+=1
@@ -158,4 +158,4 @@ class Business:
 		self.featureType = featureType
 	def predictKNN(self, userObj):
 		assert self.featureType is not None
-		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))
+		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))[0]
