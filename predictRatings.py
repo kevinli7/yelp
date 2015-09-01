@@ -157,5 +157,5 @@ class Business:
 		self.knnClassifier.fit(features, self.listRate)
 		self.featureType = featureType
 	def predictKNN(self, userObj):
-		assert self.featureType is not iNone
+		assert self.featureType is not None
 		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))
