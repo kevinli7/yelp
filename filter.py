@@ -12,20 +12,26 @@ def byteify(input):
     else:
         return input
 
-def get_json(json_string):
+def getJson(json_string):
   return byteify(json.loads(json_string))
 
-def get_date(review_json):
+def getDate(review_json):
 	date_str = review_json['date']
 	y,m,d = map(lambda x: int(x), date_str.replace('-', ' ').split())
 	date = datetime.date(y,m,d)
 	return date
 
-def get_user(review_json):
+def getUser(review_json):
 	return review_json['user_id']
 
-def get_business(review_json):
+def getBusiness(review_json):
 	return review_json['business_id']
+
+def getText(review_json):
+	return review_json['text']
+
+def getRate(review_json):
+	return review_json['stars']
 
 def filter_reviews(review_file, min_user_reviews, min_busi_reviews, data_path="data"):
 	reviews = open(review_file, 'r')
@@ -35,10 +41,10 @@ def filter_reviews(review_file, min_user_reviews, min_busi_reviews, data_path="d
 	eliminate = set()
 	print("Reading in file and populating dict...")  	
 	for r in reviews:
-		review_json = get_json(r)
-		user = get_user(review_json)
-		business = get_business(review_json)
-		date = get_date(review_json)
+		review_json = getJson(r)
+		user = getUser(review_json)
+		business = getBusiness(review_json)
+		date = getDate(review_json)
 		if (user,business) in ub2d:
 			if ub2d[(user,business)]>date:
 				eliminate.add((user,business,date))
@@ -64,10 +70,10 @@ def filter_reviews(review_file, min_user_reviews, min_busi_reviews, data_path="d
 	new_reviews = open(os.path.join(data_path, 'yelp_filtered_reviews.json'), 'w')
 	print("Writing new data file...") 
 	for r in reviews:
-		review_json = get_json(r)
-		user = get_user(review_json)
-		business = get_business(review_json)
-		date = get_date(review_json)
+		review_json = getJson(r)
+		user = getUser(review_json)
+		business = getBusiness(review_json)
+		date = getDate(review_json)
 		if (user,business,date) not in eliminate and user in qualified_users and business in qualified_business:
 			new_reviews.write(r)
 	new_reviews.close()
