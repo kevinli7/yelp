@@ -8,7 +8,7 @@ def byteify(input):
         return {byteify(key):byteify(value) for key,value in input.iteritems()}
     elif isinstance(input, list):
         return [byteify(element) for element in input]
-    elif isinstance(input, unicode):
+    elif isinstance(input, unicode):1
         return input.encode('utf-8')
     else:
         return input
