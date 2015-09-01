@@ -116,20 +116,20 @@ class Yelp:
 			businessID = f.getBusiness(reviewJson)		
 			text = f.getText(reviewJson)
 			rate = f.getRate(reviewJson)
-			if businessId not in Business.busiID2Busi.keys():
+			if businessId not in self.busiID2Busi.keys():
 				busiObj = Business(businessID, numNeighbors)
+				self.busiID2Busi[businessID]=businessObj
 				self.businessCount+=1
 			else:
-				busiObj = Business.busiID2Busi[businessId]
-			if userID not in User.userID2User.keys():
+				busiObj = self.busiID2Busi[businessId]
+			if userID not in self.userID2User.keys():
 				userObj = User(userID)
 				self.userCount+=1
+				self.userID2User[userID]=userObj
 			else:
-				userObj = User.useID2User[userID]
+				userObj = self.useID2User[userID]
 			userObj.addReview(text)
 			busiObj.addUser(userObj,rate)
-			self.busiID2Busi[businessID] = businessObj
-			self.userID2User[userID] = userObj
 		reviews.close()
 		for b in self.busiID2Busi.values():
 			b.trainKNN(self.featureType)
