@@ -134,6 +134,7 @@ class Yelp:
 		for b in self.busiID2Busi.values():
 			b.trainKNN(self.featureType)
 	def predictKNN(self, userID, businessID):
+		# TODO: Assert that the user is not null
 		userObj = self.userID2User[userID]
 		busiObj = self.busiID2Busi[businessID]
 		return busiObj.predictKNN(userObj)
