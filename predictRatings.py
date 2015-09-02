@@ -5,13 +5,24 @@ from sklearn import neighbors
 import filter as f
 
 class User:
+	
+	# @classmethod
+	# def loadWordSet(filename):
+	# 	l = list()
+	# 	with open(filename, 'r') as f:
+	# 		l = f.read().split('\n')
+	# 	return set(l), l
+
 	# The set of words that we select as features
 	wordFilename = "data/words.txt"
-	wordset, wordlist = loadWordSet(wordFilename)
+	wordlist = list()
+	with open(wordFilename, 'r') as f:
+		wordlist = f.read().split('\n')
+	wordset = set(wordlist)
 
 	# Punctuation regex and stopwords
 	punctuation = re.compile('[%s]' % re.escape(string.punctuation))
-	stopwords = set(stopwords.words())
+	stopwordSet = set(stopwords.words())
 
 	#UserID to User
 	# userID2User = dict()
@@ -33,49 +44,45 @@ class User:
 	def getID(self):
 		return self.userID
 
-	def loadWordSet(filename):
-		l = list()
-		with open(filename, 'r') as f:
-			l = f.read().split('\n')
-		return set(l), l
 
 	""" Splits and processes the text of a review from the User
 	    and updates word counts accordingly """
 	def addReview(self, text):
-		text = punctuation.sub('', text):
+		text = User.punctuation.sub('', text)
 		words = text.split()
 		for word in words:
-			if word not in stopwords:
-				if word in wordset:
-					selectedWordCount += 1
-					if word not in selectedWordCountDict:
-						selectedWordCountDict[word] = 0
-					selectedWordCountDict[word] += 1
-				totalWordCount += 1
-				if word not in wordCounts:
-					wordCounts[word] = 0
-				wordCounts[word] += 1
+			if word not in User.stopwordSet:
+				if word in User.wordset:
+					self.selectedWordCount += 1
+					if word not in self.selectedWordCountDict:
+						self.selectedWordCountDict[word] = 0
+					self.selectedWordCountDict[word] += 1
+				self.totalWordCount += 1
+				if word not in self.wordCounts:
+					self.wordCounts[word] = 0
+				self.wordCounts[word] += 1
 
 	""" Calcs and returns a feature array """
 	def calcFeature(self, featureType="selectedPercentage"):
-		if featureType not in featureSet:
+		if featureType not in User.featureSet:
 			print("Not a valid feature.")
 			return;
 		if not self.hasFeatures:
 			self.features = {
-					'selectedPercentage': calcPercentage(selectedWordCountDict, selectedWordCount),
-					'selectedPercentile': calcPercentile(selectedWordCountDict),
-					'totalPercentage': calcPercentage(wordCounts, totalWordCount),
-					'totalPercentile': calcPercentile(wordCounts)
+					'selectedPercentage': User.calcPercentage(self.selectedWordCountDict, self.selectedWordCount),
+					'selectedPercentile': User.calcPercentile(self.selectedWordCountDict),
+					'totalPercentage': User.calcPercentage(self.wordCounts, self.totalWordCount),
+					'totalPercentile': User.calcPercentile(self.wordCounts)
 					}
-			self.hasFeatures = True:
+			self.hasFeatures = True
 		return self.features[featureType]
 
 	""" Calcualtes the percentage of selected words from wordlist
 	    using the wordCoutn dictionary and total passed in """
+	@staticmethod
 	def calcPercentage(wordCounts, total):
 		features = list()
-		for word in wordlist:
+		for word in User.wordlist:
 			if word in wordCounts:
 				features.append(wordCounts[word]/total)
 			else:
@@ -84,6 +91,7 @@ class User:
 
 	""" Calculates the percentile of each selected word list from
 	    the wordCount dictionary """
+	@staticmethod
 	def calcPercentile(wordCounts):
 		sortedWordCounts = sorted(wordCounts.items(), key=lambda x:x[1])
 		numWords = len(wordCounts)
@@ -94,7 +102,7 @@ class User:
 			count += 1
 
 		features = list()
-		for word in wordlist:
+		for word in User.wordlist:
 			if word in rank:
 				features.append(rank[word]/numWords)
 			else:
@@ -116,18 +124,18 @@ class Yelp:
 			businessID = f.getBusiness(reviewJson)		
 			text = f.getText(reviewJson)
 			rate = f.getRate(reviewJson)
-			if businessId not in self.busiID2Busi.keys():
+			if businessID not in self.busiID2Busi.keys():
 				busiObj = Business(businessID, numNeighbors)
-				self.busiID2Busi[businessID]=businessObj
+				self.busiID2Busi[businessID]=busiObj
 				self.businessCount+=1
 			else:
-				busiObj = self.busiID2Busi[businessId]
+				busiObj = self.busiID2Busi[businessID]
 			if userID not in self.userID2User.keys():
 				userObj = User(userID)
 				self.userCount+=1
 				self.userID2User[userID]=userObj
 			else:
-				userObj = self.useID2User[userID]
+				userObj = self.userID2User[userID]
 			userObj.addReview(text)
 			busiObj.addUser(userObj,rate)
 		reviews.close()
@@ -152,7 +160,7 @@ class Business:
 		self.listRate.append(rate)
 		self.userCount+=1
 	def getFeatureArray(self, featureType):
-		return np.array(map(lambda user: User.calcFeature(user, featureType),listUsers))
+		return np.array(map(lambda user: User.calcFeature(user, featureType), self.listUsers))
 	def trainKNN(self, featureType):
 		features = self.getFeatureArray(featureType)
 		self.knnClassifier.fit(features, self.listRate)
@@ -160,3 +168,13 @@ class Business:
 	def predictKNN(self, userObj):
 		assert self.featureType is not None
 		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))[0]
+
+def main():
+	training = 'test_data/training_set.json'
+	validation = 'test_data/validation_set.json'
+	yelp = Yelp(10, training, 'selectedPercentage')
+
+
+
+if __name__ == "__main__":
+	main()
