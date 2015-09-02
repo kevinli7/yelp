@@ -143,9 +143,21 @@ class Yelp:
 			b.trainKNN(self.featureType)
 	def predictKNN(self, userID, businessID):
 		# TODO: Assert that the user is not null
+		if userID not in self.userID2User:
+			return -1
 		userObj = self.userID2User[userID]
 		busiObj = self.busiID2Busi[businessID]
 		return busiObj.predictKNN(userObj)
+
+	def testReview(self, reviewJSON):
+		review = f.getJson(reviewJSON)
+		userID = f.getUser(review)
+		businessID = f.getBusiness(review)
+		rate = f.getRate(review)
+		prediction = self.predictKNN(userID, businessID)
+		return (rate == prediction, rate, prediction)
+
+
 
 class Business:
 	def __init__(self, busiID, numNeighbors):
@@ -169,12 +181,10 @@ class Business:
 		assert self.featureType is not None
 		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))[0]
 
-def main():
-	training = 'test_data/training_set.json'
-	validation = 'test_data/validation_set.json'
-	yelp = Yelp(10, training, 'selectedPercentage')
-
 
 
 if __name__ == "__main__":
-	main()
+	# main()
+	training = 'test_data/training_set.json'
+	validation = 'test_data/validation_set.json'
+	y = Yelp(10, training, 'selectedPercentage')
