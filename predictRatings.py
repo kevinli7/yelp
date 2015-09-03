@@ -1,4 +1,4 @@
-import re, string
+import re, string, math
 from nltk.corpus import stopwords
 import numpy as np
 from sklearn import neighbors
@@ -48,7 +48,7 @@ class User:
 	""" Splits and processes the text of a review from the User
 	    and updates word counts accordingly """
 	def addReview(self, text):
-		text = User.punctuation.sub('', text)
+		text = User.punctuation.sub(' ', text)
 		words = text.split()
 		for word in words:
 			if word not in User.stopwordSet:
@@ -67,6 +67,7 @@ class User:
 		if featureType not in User.featureSet:
 			print("Not a valid feature.")
 			return;
+		#TODO: Has features may need to be set to false if add review is used after calc
 		if not self.hasFeatures:
 			self.features = {
 					'selectedPercentage': User.calcPercentage(self.selectedWordCountDict, self.selectedWordCount),
@@ -84,7 +85,7 @@ class User:
 		features = list()
 		for word in User.wordlist:
 			if word in wordCounts:
-				features.append(wordCounts[word]/total)
+				features.append(float(wordCounts[word])/float(total))
 			else:
 				features.append(0.0)
 		return features
@@ -104,7 +105,7 @@ class User:
 		features = list()
 		for word in User.wordlist:
 			if word in rank:
-				features.append(rank[word]/numWords)
+				features.append(float(rank[word])/float(numWords))
 			else:
 				features.append(0.0)
 		return features
@@ -155,7 +156,42 @@ class Yelp:
 		businessID = f.getBusiness(review)
 		rate = f.getRate(review)
 		prediction = self.predictKNN(userID, businessID)
-		return (rate == prediction, rate, prediction)
+		return (userID, rate == prediction, rate, prediction)
+
+	def testDataSet(self, testSetFileName):
+		testSet = open(testSetFileName, 'r')
+		total = 0
+		true = 0
+		score = [0,0,0,0,0]
+		diff = list()
+		for review in testSet:
+			result = self.testReview(review)
+			if result[1]: true += 1
+			if result[3] != -1:
+				score[int(result[3])-1] += 1
+				diff.append(abs(int(result[2])-int(result[3])))
+				total += 1
+		testSet.close()
+		average, std = self.avgAndStd(diff)
+		# print(diff)
+		print "total: {0}".format(total)
+		print "true:  {0}".format(true)
+		print "ratio: {0}".format((true + 0.0)/(total + 0.0))
+		print score
+		print "Average difference: {0}  StdDev: {1}".format(average, std)
+
+	def avgAndStd(self, nums):
+		variance = 0
+		mean = 0
+		for num in nums:
+			variance += num*num
+			mean += num
+		variance /= (len(nums) + 0.0)
+		mean /= (len(nums) + 0.0)
+		variance -= mean*mean
+		return mean, math.sqrt(variance)
+
+
 
 
 
@@ -179,6 +215,7 @@ class Business:
 		self.featureType = featureType
 	def predictKNN(self, userObj):
 		assert self.featureType is not None
+		# print (userObj.calcFeature(self.featureType))[0]
 		return self.knnClassifier.predict(np.array([userObj.calcFeature(self.featureType)]))[0]
 
 
@@ -187,4 +224,16 @@ if __name__ == "__main__":
 	# main()
 	training = 'test_data/training_set.json'
 	validation = 'test_data/validation_set.json'
-	y = Yelp(10, training, 'selectedPercentage')
+	n=15
+	print "Selected percentage, neighbors: {0}".format(n)
+	y = Yelp(n, training, 'selectedPercentage')
+	y.testDataSet(validation)
+	print "Selected percentile"
+	y = Yelp(n, training, 'selectedPercentile')
+	y.testDataSet(validation)
+	print "total percentage"
+	y = Yelp(n, training, 'totalPercentage')
+	y.testDataSet(validation)
+	print "total percentile"
+	y = Yelp(n, training, 'totalPercentile')
+	y.testDataSet(validation)
